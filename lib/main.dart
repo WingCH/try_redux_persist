@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
+import 'package:redux_persist/redux_persist.dart';
+import 'package:redux_persist_flutter/redux_persist_flutter.dart';
 
 // Redux
 class AppState {
@@ -12,7 +14,7 @@ class AppState {
       AppState(counter: counter ?? this.counter);
 
   static AppState fromJson(dynamic json) =>
-      AppState(counter: json["counter"] as int);
+      AppState(counter: json != null ? json["counter"] as int : 0);
 
   dynamic toJson() => {'counter': counter};
 }
@@ -30,14 +32,22 @@ AppState reducer(AppState state, dynamic action) {
   return state;
 }
 
-void main() {
-  // Create your store as a final variable in the main function or inside a
-  // State object. This works better with Hot Reload than creating it directly
-  // in the `build` function.
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Create Persistor
+  final persistor = Persistor<AppState>(
+    storage: FlutterStorage(),
+    serializer: JsonSerializer<AppState>(AppState.fromJson),
+  );
+
+  // Load initial state
+  final initialState = await persistor.load();
+
   final store = Store<AppState>(
     reducer,
-    initialState: AppState(),
-    middleware: [],
+    initialState: initialState ?? AppState(),
+    middleware: [persistor.createMiddleware()],
   );
 
   runApp(FlutterReduxApp(
